@@ -12,8 +12,6 @@ There is no build step and no runtime dependency: open `index.html` directly, or
 
 No installation needed — just open the **[SetPlotSVG online tool](https://natanalysis.com/setplotsvg/)**.
 
-![SetPlotSVG preview](og-image.png)
-
 ### Screenshots
 
 | Venn diagram | UpSet plot |
@@ -118,8 +116,6 @@ Please keep the Venny attribution in the footer of `index.html`.
 ### 在线使用
 
 无需安装，直接打开 **[SetPlotSVG 在线工具](https://natanalysis.com/setplotsvg/)** 即可使用。
-
-![SetPlotSVG 预览图](og-image.png)
 
 ### 界面展示
 
