@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Venn Diagram">
+  <!-- SetPlotSVG 项目图标：三组集合的韦恩图 —— 上左蓝、上右琥珀、下方绿，三色半透明交叠出两两交集与三重交集，
+       轮廓各自成色，缩到 34px 仍能一眼看出「集合相交」。
+       浅蓝底 + #3b82f6 描边，深浅主题下都能看清。 -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#eaf1ff"/>
+      <stop offset="1" stop-color="#dbe6ff"/>
+    </linearGradient>
+  </defs>
+  <rect x="1.5" y="1.5" width="61" height="61" rx="14" fill="url(#bg)" stroke="#3b82f6" stroke-width="2.5"/>
+
+  <!-- 三片半透明填充：交叠处自然加深，即为交集 -->
+  <g fill-opacity=".72">
+    <circle cx="23" cy="25" r="15" fill="#cfe0ff"/>
+    <circle cx="41" cy="25" r="15" fill="#ffe4b8"/>
+    <circle cx="32" cy="38.5" r="15" fill="#d6f0e2"/>
+  </g>
+  <!-- 三个集合的轮廓：同色描边，交叠后边界依然清晰 -->
+  <g fill="none" stroke-width="2.5">
+    <circle cx="23" cy="25" r="15" stroke="#2d70b3"/>
+    <circle cx="41" cy="25" r="15" stroke="#e0a53c"/>
+    <circle cx="32" cy="38.5" r="15" stroke="#2f9e5f"/>
+  </g>
+  <!-- 三重交集里点一颗珠子：具体元素落进共有区 -->
+  <circle cx="32" cy="30" r="2.4" fill="#1d4ed8" stroke="#ffffff" stroke-width="1.2"/>
+</svg>

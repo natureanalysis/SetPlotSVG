@@ -1,0 +1,24 @@
+{
+  "name": "setplotsvg",
+  "version": "1.0.0",
+  "description": "Client-side Venn diagram and UpSet plot generator with SVG/PNG export",
+  "keywords": [
+    "venn",
+    "venn-diagram",
+    "upset",
+    "set-visualization",
+    "svg",
+    "bioinformatics"
+  ],
+  "license": "MIT",
+  "private": false,
+  "scripts": {
+    "start": "node tools/serve.mjs",
+    "serve": "node tools/serve.mjs",
+    "test": "node tools/test.mjs",
+    "og": "node tools/make-og.mjs"
+  },
+  "devDependencies": {
+    "jsdom": "^29.1.1"
+  }
+}

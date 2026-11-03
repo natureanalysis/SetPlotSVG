@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<!-- 首屏主题引导：setplotsvg.js 要等 HTML 解析完才跑，深色用户会先白闪一下；这段在首帧前把主题定下来 -->
+<script>(function(){var k="setplotsvg-theme";try{var t=null;try{t=localStorage.getItem(k)}catch(e){}if(t!=="dark"&&t!=="light"){try{t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}catch(e){t="light"}}try{localStorage.setItem(k,t)}catch(e){}document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SetPlotSVG - 在线韦恩图 / UpSet 集合绘图工具</title>
+<meta name="description" content="SetPlotSVG 在线集合绘图工具：样本数量不设上限，自动生成 2–4 组韦恩图、5 组以上 UpSet 图，支持面积正比模式、元素查找定位、拖拽调整文字位置、点击区域查看元素，SVG / PNG 高分辨率导出、CSV 导入导出、分享链接。SetPlotSVG draws Venn diagrams with unlimited samples, UpSet plots for 5+ lists, and SVG/PNG export.">
+<meta name="keywords" content="SetPlotSVG,维恩图,韦恩图,Venn,venn diagram,韦恩图生成器,集合绘图,集合运算,生信分析,基因列表,面积正比韦恩图,权重韦恩图,area proportional venn,UpSet">
+<meta property="og:title" content="SetPlotSVG - 在线韦恩图 / UpSet 集合绘图工具">
+<meta property="og:description" content="样本数量不设上限，5 组以上自动使用 UpSet 图，支持面积正比、SVG/PNG 导出与分组注释。">
+<meta property="og:type" content="website">
+<meta property="og:image" content="og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="SetPlotSVG 集合绘图工具">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="SetPlotSVG - 在线韦恩图 / UpSet 集合绘图工具">
+<meta name="twitter:description" content="样本数量不设上限，5 组以上自动使用 UpSet 图，支持面积正比、SVG/PNG 导出与分组注释。">
+<meta name="twitter:image" content="og-image.png">
+<link rel="icon" type="image/svg+xml" href="logo.svg">
+<link rel="stylesheet" href="setplotsvg.css">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"SetPlotSVG","description":"样本数量不设上限，自动生成韦恩图/UpSet 图，支持面积正比、SVG/PNG 导出与分组注释。","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","isAccessibleForFree":true}</script>
+</head>
+<body class="compact">
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark"><img src="logo.svg" alt=""></span>
+    <div class="brand-text">
+      <h1 data-i18n="appName">SetPlotSVG</h1>
+      <p data-i18n="appSub">Unlimited samples · UpSet for 5+ · SVG / PNG export</p>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <button type="button" class="top-control" id="btnDensity" title="Compact / wide input panel"><span id="densityText">▥ Compact</span></button>
+  <div class="lang-switch" role="group" aria-label="Language / 语言">
+    <button type="button" class="lang-btn" id="langZh" lang="zh-CN">中文</button>
+    <button type="button" class="lang-btn" id="langEn" lang="en">English</button>
+  </div>
+  <button id="themeBtn" class="top-control icon-btn" title="切换深色/浅色" aria-label="切换主题">🌙</button>
+</header>
+
+<main>
+  <div class="layout">
+    <!-- ============ 左侧：输入（两行两列）+ 结果 ============ -->
+    <aside class="inputs">
+      <div class="list-cards" id="listCards"></div>
+      <button type="button" class="add-sample" id="btnAddSample" data-i18n="addSample">+ Add sample</button>
+      <div class="bulk-actions">
+        <button type="button" class="btn" id="btnUpper" data-i18n="upper">UPPERCASE</button>
+        <button type="button" class="btn" id="btnLower" data-i18n="lower">lowercase</button>
+        <button type="button" class="btn" id="btnExample" data-i18n="example">Load example</button>
+        <button type="button" class="btn btn-danger" id="btnClearAll" data-i18n="clearAll">Clear all</button>
+        <button type="button" class="btn" id="btnUndo" title="Undo / 撤销" data-i18n="undo">↶ Undo</button>
+        <button type="button" class="btn" id="btnRedo" title="Redo / 重做" data-i18n="redo">↷ Redo</button>
+        <button type="button" class="btn" id="btnShare" data-i18n="share">🔗 Copy share link</button>
+      </div>
+      <p class="hint" id="hint"></p>
+
+      <div class="results-card">
+        <div class="results-head">
+          <h2 data-i18n="results">Results</h2>
+          <div class="spacer"></div>
+          <button type="button" class="btn" id="btnCopy" data-i18n="copy">Copy</button>
+          <button type="button" class="btn" id="btnCsv" data-i18n="exportCsv">Export CSV</button>
+        </div>
+        <textarea id="names" rows="8" placeholder="..." readonly></textarea>
+      </div>
+    </aside>
+
+    <!-- ============ 右侧：画布 ============ -->
+    <section class="workspace">
+      <div class="diagram-card">
+        <!-- 常用设置：一排 -->
+        <div class="toolbar">
+          <div class="tb-group">
+            <span class="tb-label" data-i18n="grpFill">Fill</span>
+            <select id="selStyle">
+              <option value="custom" selected data-i18n="styleCustom">Custom fill</option>
+              <option value="colors" data-i18n="styleColored">Colors</option>
+              <option value="gray" data-i18n="styleGray">By % (gray)</option>
+              <option value="transparent" data-i18n="styleTrans">Transparent</option>
+            </select>
+          </div>
+          <div class="tb-group">
+            <span class="tb-label" data-i18n="line">Line</span>
+            <button type="button" class="mini" id="widthMinus" aria-label="thinner">−</button>
+            <input type="number" id="widthBox" class="num" value="3" min="1" max="20" step="1" aria-label="Line width">
+            <button type="button" class="mini" id="widthPlus" aria-label="thicker">+</button>
+          </div>
+          <div class="tb-group">
+            <span class="tb-label" data-i18n="grpText">Text</span>
+            <label class="inline" title="Show percentage under the count / 数字下方显示百分比"><input type="checkbox" id="chkPerc" checked><span>%</span></label>
+            <span class="tb-unit" title="Number size / 数字字号">123</span>
+            <button type="button" class="mini" id="numMinus" aria-label="smaller numbers">−</button>
+            <input type="number" id="numSizeBox" class="num" value="16" min="6" max="80" step="1" aria-label="Number size">
+            <button type="button" class="mini" id="numPlus" aria-label="bigger numbers">+</button>
+          </div>
+          <button type="button" class="btn btn-more" id="btnMore" aria-expanded="false" aria-controls="toolbarExtra">⚙ <span data-i18n="more">More</span></button>
+          <div class="spacer"></div>
+          <div class="export-group">
+            <button type="button" class="btn btn-primary" id="btnExportSvg">⬇ SVG</button>
+            <button type="button" class="btn btn-primary" id="btnExportPng">⬇ PNG</button>
+          </div>
+        </div>
+
+        <!-- 更多设置：折叠 -->
+        <div class="toolbar toolbar-extra" id="toolbarExtra" hidden>
+          <div class="tb-group">
+            <span class="tb-label" data-i18n="family">Font</span>
+            <select id="selFamily">
+              <optgroup label="Sans-serif">
+                <option value="sans-serif" selected>System Sans</option>
+                <option value="Inter, 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">Inter</option>
+                <option value="Roboto, 'Segoe UI', system-ui, Arial, 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">Roboto</option>
+                <option value="'Open Sans', 'Segoe UI', system-ui, Arial, 'Noto Sans SC', 'Microsoft YaHei', sans-serif">Open Sans</option>
+                <option value="Lato, 'Segoe UI', system-ui, Arial, 'Noto Sans SC', 'Microsoft YaHei', sans-serif">Lato</option>
+                <option value="'Source Sans 3', 'Source Sans Pro', 'Segoe UI', system-ui, Arial, sans-serif">Source Sans 3</option>
+                <option value="'IBM Plex Sans', 'Segoe UI', system-ui, Arial, sans-serif">IBM Plex Sans</option>
+                <option value="'Fira Sans', 'Segoe UI', system-ui, Arial, sans-serif">Fira Sans</option>
+                <option value="'Noto Sans', 'Segoe UI', system-ui, Arial, sans-serif">Noto Sans</option>
+                <option value="'DejaVu Sans', Verdana, system-ui, sans-serif">DejaVu Sans</option>
+              </optgroup>
+              <optgroup label="Serif">
+                <option value="serif">System Serif</option>
+                <option value="'Noto Serif', Georgia, 'Times New Roman', 'Songti SC', SimSun, serif">Noto Serif</option>
+                <option value="'Source Serif 4', 'Source Serif Pro', Georgia, 'Times New Roman', serif">Source Serif 4</option>
+                <option value="Merriweather, Georgia, 'Times New Roman', serif">Merriweather</option>
+                <option value="'EB Garamond', Garamond, Georgia, 'Times New Roman', serif">EB Garamond</option>
+                <option value="'IBM Plex Serif', Georgia, 'Times New Roman', serif">IBM Plex Serif</option>
+                <option value="'Liberation Serif', 'Times New Roman', 'Songti SC', SimSun, serif">Liberation Serif</option>
+              </optgroup>
+              <optgroup label="Monospace">
+                <option value="monospace">System Mono</option>
+                <option value="'JetBrains Mono', 'Cascadia Code', Consolas, 'SF Mono', Menlo, monospace">JetBrains Mono</option>
+                <option value="'Fira Code', 'Cascadia Code', Consolas, Menlo, monospace">Fira Code</option>
+                <option value="'IBM Plex Mono', Consolas, Menlo, monospace">IBM Plex Mono</option>
+                <option value="'Cascadia Code', Consolas, Menlo, monospace">Cascadia Code</option>
+                <option value="'Noto Sans Mono', 'DejaVu Sans Mono', Consolas, monospace">Noto Sans Mono</option>
+                <option value="'Source Code Pro', Consolas, Menlo, monospace">Source Code Pro</option>
+              </optgroup>
+              <optgroup label="中文 CJK">
+                <option value="'Noto Sans SC', 'Source Han Sans SC', 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', 'Hiragino Sans GB', sans-serif">Noto Sans SC 思源黑体</option>
+                <option value="'Noto Serif SC', 'Source Han Serif SC', 'Noto Serif CJK SC', 'Songti SC', SimSun, serif">Noto Serif SC 思源宋体</option>
+                <option value="'Noto Sans TC', 'Source Han Sans TC', 'Noto Sans CJK TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif">Noto Sans TC 思源黑體</option>
+                <option value="'LXGW WenKai', 'Noto Serif SC', 'Songti SC', SimSun, serif">LXGW WenKai 霞鹜文楷</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="tb-group">
+            <span class="tb-label" data-i18n="labelFont">Label size</span>
+            <button type="button" class="mini" id="labelMinus" aria-label="smaller labels">−</button>
+            <input type="number" id="labelSizeBox" class="num" value="22" min="6" max="80" step="1" aria-label="Label size">
+            <button type="button" class="mini" id="labelPlus" aria-label="bigger labels">+</button>
+          </div>
+          <div class="tb-group">
+            <span class="tb-label" data-i18n="grpTextColor">Text color</span>
+            <span class="swatch" title="List name color / 集合名称颜色"><b>A</b><input type="color" id="labelColor" value="#000000"></span>
+            <button type="button" class="mini" id="labelColorAuto" title="Auto (follow list palette) / 自动配色">↺</button>
+            <span class="swatch" title="Region number color / 区域数字颜色"><b>123</b><input type="color" id="numColor" value="#d33333"></span>
+            <button type="button" class="mini" id="numColorAuto" title="Reset to default red / 恢复默认红色">↺</button>
+          </div>
+          <div class="tb-group">
+            <span class="tb-label" data-i18n="grpStroke">Stroke</span>
+            <span class="swatch" title="Outline color / 描边颜色"><b>◯</b><input type="color" id="strokeColor" value="#000000"></span>
+          </div>
+          <div class="tb-group">
+            <span class="tb-label" data-i18n="grpUpset">UpSet 配色</span>
+            <span class="swatch" title="UpSet main bar / 主色"><b>▮</b><input type="color" id="upsetMain" value="#1F4E79"></span>
+            <span class="swatch" title="UpSet secondary bar / 辅色"><b>▯</b><input type="color" id="upsetDim" value="#B6C1CE"></span>
+            <span class="swatch" title="UpSet Set size / 集合大小条"><b>▭</b><input type="color" id="upsetSet" value="#5B9BD5"></span>
+            <span class="swatch" title="UpSet text / 文字"><b>A</b><input type="color" id="upsetText" value="#222222"></span>
+            <span class="swatch" title="UpSet lines & dots / 线条与点"><b>—</b><input type="color" id="upsetLine" value="#222222"></span>
+          </div>
+          <div class="tb-group">
+            <span class="tb-label" data-i18n="grpFillColor">Circle fill</span>
+            <span class="swatch" data-list="1"><b>1</b><input type="color" id="fill0" value="#ffffff"></span>
+            <span class="swatch" data-list="2"><b>2</b><input type="color" id="fill1" value="#ffffff"></span>
+            <span class="swatch" data-list="3"><b>3</b><input type="color" id="fill2" value="#ffffff"></span>
+            <span class="swatch" data-list="4"><b>4</b><input type="color" id="fill3" value="#ffffff"></span>
+            <span class="swatch" data-list="5"><b>5</b><input type="color" id="fill4" value="#ffffff"></span>
+            <span class="swatch" data-list="6"><b>6</b><input type="color" id="fill5" value="#ffffff"></span>
+            <button type="button" class="mini" id="fillAuto" title="Classic Venny palette (blue/yellow/green/red/purple/cyan) / 恢复经典配色">↺</button>
+            <span class="tb-unit" data-i18n="alpha">Opacity</span>
+            <input type="range" id="alphaRange" min="10" max="90" step="5" value="50" aria-label="Fill opacity">
+          </div>
+          <div class="tb-group">
+            <label class="inline" title="Auto-shrink numbers to fit inside their region; when even the smallest size does not fit, the count is replaced by &quot;?&quot; (hover to see it). Only active while auto-fit is on / 数字超出区域时自动缩小；缩到最小仍放不下则用「?」占位（悬停显示真实值）；关闭后完全手动"><input type="checkbox" id="chkFit" checked><span data-i18n="fitNums">Fit numbers</span></label>
+          </div>
+          <div class="tb-group" title="Export options / 导出选项">
+            <select id="pngSize" title="PNG width in pixels / PNG 宽度像素">
+              <option value="640">640</option>
+              <option value="1024" selected>1024</option>
+              <option value="2048">2048</option>
+              <option value="4096">4096</option>
+            </select>
+            <label class="inline" title="Transparent background / 导出时背景透明"><input type="checkbox" id="chkTransBg"><span data-i18n="transBg">Transp. bg</span></label>
+          </div>
+        </div>
+
+        <div class="weight-row">
+          <span class="view-controls">
+
+            <label class="mode-switch inline" id="upsetLimitWrap" hidden title="Show top 30 intersections by default / 默认只显示前 30 个交集">
+              <span data-i18n="upsetLimitLabel">交集：</span>
+              <select id="selUpsetLimit">
+                <option value="30" data-i18n="upsetLimitTop">前 30</option>
+                <option value="all" data-i18n="upsetLimitAll">全部</option>
+              </select>
+            </label>
+            <label class="mode-switch inline" id="upsetThemeWrap" hidden title="UpSet theme: Nature / GraphPad / Minimal / UpSet 主题">
+              <span data-i18n="upsetThemeLabel">主题：</span>
+              <select id="selUpsetTheme">
+                <option value="nature" data-i18n="themeNature">Nature</option>
+                <option value="graphpad" data-i18n="themeGraphpad">GraphPad</option>
+                <option value="minimal" data-i18n="themeMinimal">极简</option>
+              </select>
+            </label>
+            <label class="mode-switch inline" id="upsetSetPosWrap" hidden title="Set size bars on the left axis, or on the right in place of the experimental-group column (groups are hidden and each bar is labelled with its total) / 集合大小条放在左侧坐标轴，或改放到右侧分组位置（此时不显示分组，柱子上显示数值）">
+              <span data-i18n="upsetSetPosLabel">集合大小：</span>
+              <select id="selUpsetSetPos">
+                <option value="left" data-i18n="upsetSetPosLeft">左侧</option>
+                <option value="right" data-i18n="upsetSetPosRight">右侧（无分组）</option>
+              </select>
+            </label>
+          </span>
+          <label class="mode-switch inline" title="Scale each region's area to the number of elements it holds (2 lists: exact; 3–4: numeric fit; 5+ lists: UpSet, not available) / 各区域面积按所含元素数量缩放（2 组精确，3–4 组数值拟合；5 组以上 UpSet 图不支持）">
+            <input type="checkbox" id="chkWeight"><span data-i18n="weightMode">⚖️ Area-proportional</span>
+          </label>
+        </div>
+
+        <div id="stage">
+          <svg id="vennSvg" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Venn diagram"></svg>
+          <div class="tip" id="tip" hidden></div>
+        </div>
+
+        <div class="stage-tools">
+          <button type="button" class="btn" id="btnStats" aria-expanded="true" aria-controls="statsPanel">📊 <span data-i18n="stats">Statistics</span></button>
+          <span class="finder">
+            <input type="search" id="findEl" placeholder="🔍 Find an element…" autocomplete="off">
+            <button type="button" class="mini" id="btnFindClear" title="Clear / 清除">✕</button>
+          </span>
+          <button type="button" class="btn" id="btnResetPos" title="Reset dragged text positions / 重置被拖动的文字位置">↺ <span data-i18n="resetPos">Positions</span></button>
+          <div class="spacer"></div>
+          <span class="fit-dev" id="fitDev" hidden></span>
+          <span class="stage-note" id="stageNote" data-i18n="noteClick">👆 Click a region or number; drag a text to move it; double-click to reset</span>
+        </div>
+
+        <div class="stats" id="statsPanel">
+          <div class="stats-col">
+            <h3 data-i18n="statLists">Size of each list</h3>
+            <div class="bars" id="statLists"></div>
+          </div>
+          <div class="stats-col">
+            <h3 data-i18n="statRegions">Intersection distribution</h3>
+            <div class="bars" id="statRegions"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ 教程（页面下方） ============ -->
+  <section class="tutorial">
+    <h2 data-i18n="tutTitle">How it works</h2>
+    <ol class="tut-steps">
+      <li data-i18n="step1">Paste sample lists on the left (one element per row); click "Add sample" to add more</li>
+      <li data-i18n="step2">Click a number in the diagram to list its elements in the Results panel</li>
+      <li data-i18n="step3">Pick a style then export SVG / PNG in one click</li>
+      <li data-i18n="step4">Drag any label or number to reposition it; double-click to reset. Use "Find an element" to highlight where an item sits</li>
+      <li data-i18n="step5">Tick "Area-proportional" so every region's area matches the number of elements it holds</li>
+      <li data-i18n="step6">Use ↑/↓ on each list card to reorder groups; the Venn / UpSet views and exports follow the new order</li>
+      <li data-i18n="step7">Optional: set an experimental group and colour on each card; the UpSet plot shows the colour swatch and group name on the right, and the Set size axis shows each sample's total</li>
+    </ol>
+    <p class="privacy" data-i18n="privacy">🔒 100% client-side, data never leaves your browser</p>
+  </section>
+</main>
+
+<footer class="footer">
+  <p data-i18n="credit">Inspired by &amp; compatible with Venny 2.1 (Oliveros, J.C. 2007-2015, BioinfoGP CNB-CSIC). Adds SVG/PNG export, file import, share links.</p>
+  <p class="toast" id="toast" role="status" aria-live="polite"></p>
+</footer>
+
+<input type="file" id="fileInput" accept=".txt,.csv,text/plain" hidden>
+
+<script src="vendor/polygon-clipping.min.js"></script>
+<script src="setplotsvg.js"></script>
+</body>
+</html>

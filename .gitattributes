@@ -1,0 +1,9 @@
+# 全仓库统一 LF：Windows 工作副本若被转成 CRLF，测试里的多行断言容易莫名失败
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
